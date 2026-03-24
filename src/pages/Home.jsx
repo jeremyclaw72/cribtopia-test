@@ -11,6 +11,22 @@ const BADGE_COLORS = {
 };
 const API_URL = 'http://100.104.178.26:3000';
 
+// Auth helper
+function useAuth() {
+  const [user, setUser] = React.useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
+
+  return { user, logout };
+}
+
 // Placeholder images for when photos are missing
 const PLACEHOLDER_IMAGES = [
   'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
@@ -103,6 +119,8 @@ export default function Home() {
     return PLACEHOLDER_IMAGES[Math.floor(Math.random() * PLACEHOLDER_IMAGES.length)];
   };
 
+  const auth = useAuth();
+
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0a2540, #1a4a7a)', fontFamily: 'system-ui, sans-serif', color: '#fff' }}>
       {/* Nav */}
@@ -112,6 +130,14 @@ export default function Home() {
         <a href="#/SellerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', fontSize: 13, whiteSpace: 'nowrap' }}>Sell / Rent</a>
         <a href="#/BuyerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', fontSize: 13, whiteSpace: 'nowrap' }}>Buyer</a>
         <a href="#/ContractDrafter" style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', fontSize: 13, whiteSpace: 'nowrap' }}>Contracts</a>
+        {auth.user ? (
+          <>
+            <span style={{ color: '#10b981', padding: '6px 12px', fontSize: 13 }}>👋 {auth.user.full_name || auth.user.email}</span>
+            <button onClick={() => { auth.logout(); window.location.reload(); }} style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', fontSize: 13, cursor: 'pointer' }}>Logout</button>
+          </>
+        ) : (
+          <a href="#/login" style={{ color: '#fff', textDecoration: 'none', padding: '7px 14px', borderRadius: 10, background: 'linear-gradient(135deg, #0ea5e9, #10b981)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>Sign In</a>
+        )}
         <a href="#/SellerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '7px 14px', borderRadius: 10, background: 'linear-gradient(135deg, #0ea5e9, #10b981)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>List Property</a>
       </nav>
 

@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -60,6 +60,130 @@ app.use('/uploads', express.static(uploadsDir));
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Auth middleware
+const auth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+    req.user = result.rows[0];
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Auth endpoints
+
+// Register
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { email, password, full_name, phone, role } = req.body;
+    
+    // Check if user exists
+    const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    
+    // Hash password
+    const password_hash = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const result = await pool.query(
+      `INSERT INTO users (email, password_hash, full_name, phone, role) 
+       VALUES ($1, $2, $3, $4, $5) 
+       RETURNING id, email, full_name, phone, role, created_at`,
+      [email, password_hash, full_name, phone || null, role || 'buyer']
+    );
+    
+    const user = result.rows[0];
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.status(201).json({ user, token });
+  } catch (err) {
+    console.error('Error registering user:', err);
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Find user
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    const user = result.rows[0];
+    
+    // Check password
+    if (!user.password_hash) {
+      return res.status(401).json({ error: 'Account uses OAuth. Please login with Google.' });
+    }
+    
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+    
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.json({ 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        full_name: user.full_name, 
+        phone: user.phone, 
+        role: user.role 
+      }, 
+      token 
+    });
+  } catch (err) {
+    console.error('Error logging in:', err);
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+// Get current user
+app.get('/api/auth/me', auth, (req, res) => {
+  res.json({ 
+    user: { 
+      id: req.user.id, 
+      email: req.user.email, 
+      full_name: req.user.full_name, 
+      phone: req.user.phone, 
+      role: req.user.role 
+    } 
+  });
+});
+
+// Update user profile
+app.put('/api/auth/profile', auth, async (req, res) => {
+  try {
+    const { full_name, phone, role } = req.body;
+    const result = await pool.query(
+      `UPDATE users SET full_name = $1, phone = $2, role = $3, updated_at = NOW() 
+       WHERE id = $4 
+       RETURNING id, email, full_name, phone, role`,
+      [full_name, phone, role, req.user.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating profile:', err);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
 });
 
 // Listings endpoints
@@ -161,6 +285,40 @@ app.post('/api/listings', async (req, res) => {
   }
 });
 
+// Create listing for authenticated user
+app.post('/api/listings/auth', auth, async (req, res) => {
+  try {
+    const { 
+      address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type,
+      year_built, lot_size, parking, heating, cooling, flooring, features, neighborhood,
+      photos, video_path
+    } = req.body;
+    const result = await pool.query(
+      `INSERT INTO listings (address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type, year_built, lot_size, parking, heating, cooling, flooring, features, neighborhood, photos, video_path, seller_id, seller_name, seller_email, seller_phone)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) RETURNING *`,
+      [address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type || 'FSBO', year_built || null, lot_size || null, parking || null, heating || null, cooling || null, flooring || null, features ? JSON.stringify(features) : null, neighborhood || null, photos ? JSON.stringify(photos) : null, video_path || null, req.user.id, req.user.full_name, req.user.email, req.user.phone]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating listing:', err);
+    res.status(500).json({ error: 'Failed to create listing' });
+  }
+});
+
+// Get current user's listings
+app.get('/api/listings/my', auth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM listings WHERE seller_id = $1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching my listings:', err);
+    res.status(500).json({ error: 'Failed to fetch listings' });
+  }
+});
+
 app.put('/api/listings/:id', async (req, res) => {
   try {
     // JSONB columns that need to be stringified
@@ -223,6 +381,42 @@ app.get('/api/offers', async (req, res) => {
   }
 });
 
+// Get offers for the authenticated buyer
+app.get('/api/offers/my', auth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT o.*, l.address, l.city, l.state, l.price, l.photos 
+       FROM offers o 
+       JOIN listings l ON o.listing_id = l.id 
+       WHERE o.buyer_id = $1 
+       ORDER BY o.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching my offers:', err);
+    res.status(500).json({ error: 'Failed to fetch offers' });
+  }
+});
+
+// Get offers for the authenticated seller's listings
+app.get('/api/offers/incoming', auth, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT o.*, l.address, l.city, l.state, l.listing_type, l.price, l.photos
+       FROM offers o 
+       JOIN listings l ON o.listing_id = l.id 
+       WHERE l.seller_id = $1 
+       ORDER BY o.created_at DESC`,
+      [req.user.id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching incoming offers:', err);
+    res.status(500).json({ error: 'Failed to fetch offers' });
+  }
+});
+
 app.get('/api/offers/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM offers WHERE id = $1', [req.params.id]);
@@ -236,7 +430,23 @@ app.get('/api/offers/:id', async (req, res) => {
   }
 });
 
-app.post('/api/offers', async (req, res) => {
+app.post('/api/offers', auth, async (req, res) => {
+  try {
+    const { listing_id, buyer_name, buyer_email, buyer_phone, offer_amount, earnest_money, financing_type, closing_date, contingencies, message } = req.body;
+    const result = await pool.query(
+      `INSERT INTO offers (listing_id, buyer_id, buyer_name, buyer_email, buyer_phone, offer_amount, earnest_money, financing_type, closing_date, contingencies, message, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending') RETURNING *`,
+      [listing_id, req.user.id, buyer_name, buyer_email, buyer_phone, offer_amount, earnest_money || null, financing_type || 'Cash', closing_date || null, contingencies || null, message || null]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating offer:', err);
+    res.status(500).json({ error: 'Failed to create offer' });
+  }
+});
+
+// Allow unauthenticated offer submission (fallback for demo)
+app.post('/api/offers/guest', async (req, res) => {
   try {
     const { listing_id, buyer_name, buyer_email, buyer_phone, offer_amount, earnest_money, financing_type, closing_date, contingencies, message } = req.body;
     const result = await pool.query(

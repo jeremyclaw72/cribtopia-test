@@ -8,10 +8,22 @@ const US_STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','
 
 const FEATURE_OPTIONS = ['Smart home', 'Security system', 'Sprinkler system', 'Pool', 'Outdoor kitchen', 'Solar panels', 'EV charger', 'Outdoor living space', 'Updated kitchen', 'New roof', 'Central A/C', 'Garage', 'Basement', 'Fireplace', 'Hardwood floors', 'Walk-in closets', 'Home office', 'Gym', 'Wine cellar'];
 
+// Auth helper
+function useAuth() {
+  const [user, setUser] = React.useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  return { user };
+}
+
 export default function SellerDashboard() {
+  const auth = useAuth();
   const [view, setView] = useState('listings');
   const [listings, setListings] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [offersLoading, setOffersLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -60,6 +72,7 @@ export default function SellerDashboard() {
   // Fetch listings from API
   React.useEffect(() => {
     fetchListings();
+    fetchOffers();
   }, []);
 
   const fetchListings = async () => {
@@ -73,6 +86,44 @@ export default function SellerDashboard() {
       setListings([]);
     }
     setLoading(false);
+  };
+
+  const fetchOffers = async () => {
+    setOffersLoading(true);
+    try {
+      // For now, fetch all offers. When auth is fully integrated, use /api/offers/incoming
+      const res = await fetch(`${API_URL}/api/offers`);
+      const data = await res.json();
+      setOffers(data || []);
+    } catch (err) {
+      console.error('Error fetching offers:', err);
+      setOffers([]);
+    }
+    setOffersLoading(false);
+  };
+
+  const handleOfferAction = async (offerId, status, counterAmount = null) => {
+    try {
+      const body = { status };
+      if (counterAmount) {
+        body.counter_amount = parseFloat(counterAmount);
+      }
+      
+      const res = await fetch(`${API_URL}/api/offers/${offerId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      
+      if (res.ok) {
+        fetchOffers();
+      } else {
+        alert('Failed to update offer');
+      }
+    } catch (err) {
+      console.error('Error updating offer:', err);
+      alert('Error connecting to server');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -869,7 +920,86 @@ export default function SellerDashboard() {
         {view === 'offers' && (
           <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 24, border: '1px solid rgba(255,255,255,0.1)' }}>
             <h2 style={{ margin: '0 0 20px' }}>Incoming Offers</h2>
-            <p style={{ opacity: 0.7 }}>No offers yet. Create listings to receive offers from buyers.</p>
+            {offersLoading ? (
+              <p style={{ opacity: 0.7 }}>Loading offers...</p>
+            ) : offers.length === 0 ? (
+              <p style={{ opacity: 0.7 }}>No offers yet. Create listings to receive offers from buyers.</p>
+            ) : (
+              <div style={{ display: 'grid', gap: 16 }}>
+                {offers.map(offer => (
+                  <div key={offer.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>{offer.address}</h3>
+                        <p style={{ margin: 0, fontSize: 13, opacity: 0.6 }}>{offer.city}, {offer.state}</p>
+                      </div>
+                      <span style={{ 
+                        padding: '4px 12px', 
+                        borderRadius: 20, 
+                        fontSize: 12, 
+                        fontWeight: 600,
+                        background: offer.status === 'pending' ? 'rgba(245,158,11,0.2)' : 
+                                   offer.status === 'accepted' ? 'rgba(16,185,129,0.2)' : 
+                                   offer.status === 'rejected' ? 'rgba(239,68,68,0.2)' :
+                                   offer.status === 'countered' ? 'rgba(14,165,233,0.2)' : 'rgba(255,255,255,0.1)',
+                        color: offer.status === 'pending' ? '#f59e0b' : 
+                               offer.status === 'accepted' ? '#10b981' : 
+                               offer.status === 'rejected' ? '#ef4444' :
+                               offer.status === 'countered' ? '#0ea5e9' : '#fff'
+                      }}>
+                        {offer.status?.charAt(0).toUpperCase() + offer.status?.slice(1)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 12 }}>
+                      <div>
+                        <span style={{ fontSize: 12, opacity: 0.6 }}>Offer Amount</span>
+                        <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#10b981' }}>
+                          ${parseFloat(offer.offer_amount).toLocaleString()}
+                        </p>
+                      </div>
+                      {offer.counter_amount && (
+                        <div>
+                          <span style={{ fontSize: 12, opacity: 0.6 }}>Counter Amount</span>
+                          <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0ea5e9' }}>
+                            ${parseFloat(offer.counter_amount).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+                      <div>
+                        <span style={{ fontSize: 12, opacity: 0.6 }}>Buyer</span>
+                        <p style={{ margin: 0, fontWeight: 600 }}>{offer.buyer_name}</p>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: 12, opacity: 0.6 }}>Financing</span>
+                        <p style={{ margin: 0 }}>{offer.financing_type || 'Cash'}</p>
+                      </div>
+                      {offer.earnest_money && (
+                        <div>
+                          <span style={{ fontSize: 12, opacity: 0.6 }}>Earnest Money</span>
+                          <p style={{ margin: 0 }}>${parseFloat(offer.earnest_money).toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                    {offer.message && (
+                      <div style={{ marginBottom: 12, padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 8 }}>
+                        <span style={{ fontSize: 12, opacity: 0.6 }}>Buyer's Message</span>
+                        <p style={{ margin: '4px 0 0', fontSize: 14 }}>{offer.message}</p>
+                      </div>
+                    )}
+                    {offer.status === 'pending' && (
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <button onClick={() => handleOfferAction(offer.id, 'accepted')} style={{ padding: '10px 20px', borderRadius: 8, background: '#10b981', border: 'none', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Accept</button>
+                        <button onClick={() => { const amt = prompt('Enter counter offer amount:'); if (amt) handleOfferAction(offer.id, 'countered', amt); }} style={{ padding: '10px 20px', borderRadius: 8, background: '#0ea5e9', border: 'none', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Counter</button>
+                        <button onClick={() => handleOfferAction(offer.id, 'rejected')} style={{ padding: '10px 20px', borderRadius: 8, background: '#ef4444', border: 'none', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Reject</button>
+                      </div>
+                    )}
+                    <p style={{ margin: '12px 0 0', fontSize: 12, opacity: 0.5 }}>
+                      Submitted {new Date(offer.created_at).toLocaleDateString()} at {new Date(offer.created_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

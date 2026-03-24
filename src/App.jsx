@@ -1,9 +1,75 @@
 import React from 'react'
-import { HashRouter as Router, Routes, Route } from 'react-router-dom'
+import { HashRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
 
 console.log('[App] Starting Cribtopia...')
 
 const LOGO = "https://media.base44.com/images/public/69b1a2ff64aa2c797de555bf/b3c405919_IMG_6232.png";
+const API_URL = 'http://100.104.178.26:3000';
+
+// Auth Context
+const AuthContext = React.createContext(null);
+
+export function useAuth() {
+  return React.useContext(AuthContext);
+}
+
+function AuthProvider({ children }) {
+  const [user, setUser] = React.useState(() => {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [loading, setLoading] = React.useState(false);
+
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (email, password, fullName, phone, role) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, full_name: fullName, phone, role })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
 // Chat Widget - visible on all pages with online status
 function CribtopiaChatWidget() {
@@ -244,6 +310,7 @@ class ErrorBoundary extends React.Component {
 
 // Lazy load pages
 const Home = React.lazy(() => import('./pages/Home'))
+const Login = React.lazy(() => import('./pages/Login'))
 const SellerDashboard = React.lazy(() => import('./pages/SellerDashboard'))
 const BuyerDashboard = React.lazy(() => import('./pages/BuyerDashboard'))
 const ContractDrafter = React.lazy(() => import('./pages/ContractDrafter'))
@@ -262,23 +329,26 @@ function App() {
   console.log('[App] Rendering App...')
   
   return (
-    <ErrorBoundary>
-      <Router>
-        <React.Suspense fallback={<Loading />}>
-          <div style={{ minHeight: '100vh' }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/SellerDashboard" element={<SellerDashboard />} />
-              <Route path="/BuyerDashboard" element={<BuyerDashboard />} />
-              <Route path="/ContractDrafter" element={<ContractDrafter />} />
-              <Route path="/FAQAssistant" element={<FAQAssistant />} />
-            </Routes>
-          </div>
-          <CribtopiaChatWidget />
-        </React.Suspense>
-      </Router>
-    </ErrorBoundary>
-  )
+    <AuthProvider>
+      <ErrorBoundary>
+        <Router>
+          <React.Suspense fallback={<Loading />}>
+            <div style={{ minHeight: '100vh' }}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/SellerDashboard" element={<SellerDashboard />} />
+                <Route path="/BuyerDashboard" element={<BuyerDashboard />} />
+                <Route path="/ContractDrafter" element={<ContractDrafter />} />
+                <Route path="/FAQAssistant" element={<FAQAssistant />} />
+              </Routes>
+            </div>
+            <CribtopiaChatWidget />
+          </React.Suspense>
+        </Router>
+      </ErrorBoundary>
+    </AuthProvider>
+  );
 }
 
 export default App
