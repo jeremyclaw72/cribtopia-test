@@ -105,7 +105,7 @@ export default function Home() {
         <a href="#/SellerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', fontSize: 13, whiteSpace: 'nowrap' }}>Sell / Rent</a>
         <a href="#/BuyerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', fontSize: 13, whiteSpace: 'nowrap' }}>Buyer</a>
         <a href="#/ContractDrafter" style={{ color: '#fff', textDecoration: 'none', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.1)', fontSize: 13, whiteSpace: 'nowrap' }}>Contracts</a>
-        <a href="#/SellerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '7px 14px', borderRadius: 10, background: 'linear-gradient(135deg, #0ea5e9, #10b981)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>List Property →</a>
+        <a href="#/SellerDashboard" style={{ color: '#fff', textDecoration: 'none', padding: '7px 14px', borderRadius: 10, background: 'linear-gradient(135deg, #0ea5e9, #10b981)', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap' }}>List Property</a>
       </nav>
 
       {/* Hero */}
@@ -119,9 +119,21 @@ export default function Home() {
           The platform that replaces real estate agents entirely.<br />
           FSBO reinvented — simple, modern, built for everyone.
         </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 40 }}>
-          <a href="#/SellerDashboard" style={{ padding: '14px 28px', borderRadius: 12, background: 'linear-gradient(135deg, #0ea5e9, #10b981)', color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 15 }}>📋 List Your Property Free</a>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+          <a href="#/SellerDashboard" style={{ padding: '14px 28px', borderRadius: 12, background: 'linear-gradient(135deg, #0ea5e9, #10b981)', color: '#fff', textDecoration: 'none', fontWeight: 700, fontSize: 15 }}>📋 List Your Property</a>
           <a href="#/BuyerDashboard" style={{ padding: '14px 28px', borderRadius: 12, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: 15 }}>👤 Buyer Dashboard</a>
+        </div>
+        
+        {/* Commission Savings Counter */}
+        <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 16, padding: '20px 32px', marginBottom: 40, display: 'inline-block' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
+            <span style={{ fontSize: 28 }}>💰</span>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 2 }}>Homeowners have saved</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: '#10b981' }}>$1,247,850</div>
+              <div style={{ fontSize: 12, opacity: 0.7 }}>in real estate commissions</div>
+            </div>
+          </div>
         </div>
       </div>
 
