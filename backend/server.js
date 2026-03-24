@@ -160,8 +160,19 @@ app.post('/api/listings', async (req, res) => {
 
 app.put('/api/listings/:id', async (req, res) => {
   try {
+    // JSONB columns that need to be stringified
+    const jsonbFields = ['photos', 'features', 'amenities'];
+    
     const fields = Object.keys(req.body);
-    const values = Object.values(req.body);
+    const values = Object.values(req.body).map((val, i) => {
+      const field = fields[i];
+      // Stringify arrays for JSONB columns
+      if (jsonbFields.includes(field) && Array.isArray(val)) {
+        return JSON.stringify(val);
+      }
+      return val;
+    });
+    
     const setClause = fields.map((f, i) => `${f} = $${i + 2}`).join(', ');
     
     const result = await pool.query(
