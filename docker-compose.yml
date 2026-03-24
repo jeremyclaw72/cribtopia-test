@@ -1,0 +1,57 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cribtopia-postgres
+    environment:
+      POSTGRES_USER: cribtopia
+      POSTGRES_PASSWORD: cribtopia_secret_2024
+      POSTGRES_DB: cribtopia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cribtopia"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (Node.js + Express)
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cribtopia-api
+    environment:
+      DATABASE_URL: postgres://cribtopia:cribtopia_secret_2024@postgres:5432/cribtopia
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cribtopia-frontend
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
