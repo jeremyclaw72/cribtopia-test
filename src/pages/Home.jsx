@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 
 const LOGO = "https://media.base44.com/images/public/69b1a2ff64aa2c797de555bf/b3c405919_IMG_6232.png";
 const TYPE_COLORS = { FSBO: '#10b981', 'Rent-to-Own': '#0ea5e9', Rental: '#f59e0b', Vacation: '#8b5cf6' };
+const BADGE_COLORS = {
+  sold: '#ef4444',      // Red
+  pending: '#f59e0b',   // Orange/Amber
+  featured: '#0ea5e9',  // Blue/Teal
+  just_listed: '#10b981', // Green
+  pet_friendly: '#a16207' // Brown/Tan
+};
 const API_URL = 'http://100.104.178.26:3000';
 
 // Placeholder images for when photos are missing
@@ -187,6 +194,55 @@ export default function Home() {
                     alt={listing.address}
                     onError={(e) => { e.target.src = PLACEHOLDER_IMAGES[0]; }}
                   />
+                  {/* Status badges (top left) - SOLD or PENDING */}
+                  {listing.status?.toLowerCase() === 'sold' && (
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 10, 
+                      left: 10, 
+                      background: BADGE_COLORS.sold,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      Sold
+                    </div>
+                  )}
+                  {listing.status?.toLowerCase() === 'pending' && (
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 10, 
+                      left: 10, 
+                      background: BADGE_COLORS.pending,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      Pending
+                    </div>
+                  )}
+                  {/* Featured badge (top center) */}
+                  {listing.featured && (
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 10, 
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: BADGE_COLORS.featured,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      Featured
+                    </div>
+                  )}
+                  {/* Listing type (top right) */}
                   <div style={{ 
                     position: 'absolute', 
                     top: 10, 
@@ -199,6 +255,36 @@ export default function Home() {
                   }}>
                     {listing.listing_type}
                   </div>
+                  {/* Just Listed badge (below type) */}
+                  {listing.just_listed && (
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 38, 
+                      right: 10, 
+                      background: BADGE_COLORS.just_listed,
+                      padding: '3px 10px',
+                      borderRadius: 20,
+                      fontSize: 10,
+                      fontWeight: 700
+                    }}>
+                      Just Listed
+                    </div>
+                  )}
+                  {/* Pet Friendly badge (bottom left) - for rentals/vacation */}
+                  {listing.pet_friendly && (listing.listing_type === 'Rental' || listing.listing_type === 'Vacation') && (
+                    <div style={{ 
+                      position: 'absolute', 
+                      bottom: 10, 
+                      left: 10, 
+                      background: BADGE_COLORS.pet_friendly,
+                      padding: '4px 10px',
+                      borderRadius: 20,
+                      fontSize: 10,
+                      fontWeight: 600
+                    }}>
+                      🐾 Pet Friendly
+                    </div>
+                  )}
                 </div>
                 <div style={{ padding: 16 }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: '#10b981', marginBottom: 4 }}>{formatPrice(listing.price, listing.listing_type)}</div>
@@ -337,6 +423,69 @@ export default function Home() {
                   }}
                 >×</button>
 
+                {/* Status Badges - SOLD or PENDING */}
+                {selectedListing.status?.toLowerCase() === 'sold' && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    left: 12, 
+                    background: BADGE_COLORS.sold,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}>
+                    Sold
+                  </div>
+                )}
+                {selectedListing.status?.toLowerCase() === 'pending' && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    left: 12, 
+                    background: BADGE_COLORS.pending,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}>
+                    Pending
+                  </div>
+                )}
+                {/* Featured Badge */}
+                {selectedListing.featured && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: BADGE_COLORS.featured,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}>
+                    Featured
+                  </div>
+                )}
+                {/* Just Listed Badge */}
+                {selectedListing.just_listed && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 44, 
+                    left: 12, 
+                    background: BADGE_COLORS.just_listed,
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 700
+                  }}>
+                    Just Listed
+                  </div>
+                )}
                 {/* Listing Type Badge */}
                 <div style={{ 
                   position: 'absolute', 
@@ -350,6 +499,21 @@ export default function Home() {
                 }}>
                   {selectedListing.listing_type}
                 </div>
+                {/* Pet Friendly Badge */}
+                {selectedListing.pet_friendly && (selectedListing.listing_type === 'Rental' || selectedListing.listing_type === 'Vacation') && (
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 12, 
+                    right: 12, 
+                    background: BADGE_COLORS.pet_friendly,
+                    padding: '6px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600
+                  }}>
+                    🐾 Pet Friendly
+                  </div>
+                )}
               </div>
 
               {/* Thumbnail Strip */}
