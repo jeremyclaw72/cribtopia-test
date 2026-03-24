@@ -13,6 +13,7 @@ export default function SellerDashboard() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({
     address: '',
@@ -37,7 +38,11 @@ export default function SellerDashboard() {
     video_path: '',
     seller_name: '',
     seller_email: '',
-    seller_phone: ''
+    seller_phone: '',
+    featured: false,
+    just_listed: false,
+    pet_friendly: false,
+    status: 'Active'
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -76,8 +81,13 @@ export default function SellerDashboard() {
     setMessage('');
     
     try {
-      const res = await fetch(`${API_URL}/api/listings`, {
-        method: 'POST',
+      const url = editingId 
+        ? `${API_URL}/api/listings/${editingId}`
+        : `${API_URL}/api/listings`;
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
@@ -93,8 +103,9 @@ export default function SellerDashboard() {
       });
       
       if (res.ok) {
-        setMessage('✅ Listing created successfully!');
+        setMessage(editingId ? '✅ Listing updated successfully!' : '✅ Listing created successfully!');
         setShowForm(false);
+        setEditingId(null);
         setForm({
           address: '',
           city: '',
@@ -118,18 +129,114 @@ export default function SellerDashboard() {
           video_path: '',
           seller_name: '',
           seller_email: '',
-          seller_phone: ''
+          seller_phone: '',
+          featured: false,
+          just_listed: false,
+          pet_friendly: false,
+          status: 'Active'
         });
         fetchListings();
       } else {
-        setMessage('❌ Failed to create listing. Please try again.');
+        setMessage('❌ Failed to save listing. Please try again.');
       }
     } catch (err) {
-      console.error('Error creating listing:', err);
+      console.error('Error saving listing:', err);
       setMessage('❌ Error connecting to server.');
     }
     
     setSaving(false);
+  };
+
+  const handleEdit = (listing) => {
+    setEditingId(listing.id);
+    setForm({
+      address: listing.address || '',
+      city: listing.city || '',
+      state: listing.state || 'CO',
+      zip: listing.zip || '',
+      price: listing.price || '',
+      bedrooms: listing.bedrooms || '',
+      bathrooms: listing.bathrooms || '',
+      sqft: listing.sqft || '',
+      description: listing.description || '',
+      listing_type: listing.listing_type || 'FSBO',
+      year_built: listing.year_built || '',
+      lot_size: listing.lot_size || '',
+      parking: listing.parking || '',
+      heating: listing.heating || '',
+      cooling: listing.cooling || '',
+      flooring: listing.flooring || '',
+      features: listing.features || [],
+      neighborhood: listing.neighborhood || '',
+      photos: listing.photos || [],
+      video_path: listing.video_path || '',
+      seller_name: listing.seller_name || '',
+      seller_email: listing.seller_email || '',
+      seller_phone: listing.seller_phone || '',
+      featured: listing.featured || false,
+      just_listed: listing.just_listed || false,
+      pet_friendly: listing.pet_friendly || false,
+      status: listing.status || 'Active'
+    });
+    setShowForm(true);
+  };
+
+  const handleUnlist = async (listingId) => {
+    if (!confirm('Are you sure you want to unlist this property? It will be marked as inactive.')) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/api/listings/${listingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Inactive' })
+      });
+      
+      if (res.ok) {
+        setMessage('✅ Listing unlisted successfully');
+        fetchListings();
+      } else {
+        setMessage('❌ Failed to unlist listing');
+      }
+    } catch (err) {
+      console.error('Error unlisting:', err);
+      setMessage('❌ Error connecting to server');
+    }
+  };
+
+  const handleDelete = async (listingId) => {
+    if (!confirm('Are you sure you want to permanently delete this listing? This cannot be undone.')) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/api/listings/${listingId}`, {
+        method: 'DELETE'
+      });
+      
+      if (res.ok) {
+        setMessage('✅ Listing deleted successfully');
+        fetchListings();
+      } else {
+        setMessage('❌ Failed to delete listing');
+      }
+    } catch (err) {
+      console.error('Error deleting:', err);
+      setMessage('❌ Error connecting to server');
+    }
+  };
+
+  const handleBadgeToggle = async (listingId, field, value) => {
+    try {
+      const res = await fetch(`${API_URL}/api/listings/${listingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value })
+      });
+      
+      if (res.ok) {
+        fetchListings();
+      }
+    } catch (err) {
+      console.error('Error updating badge:', err);
+    }
   };
 
   const handleChange = (e) => {
@@ -313,18 +420,61 @@ export default function SellerDashboard() {
                 ) : (
                   <div style={{ display: 'grid', gap: 16 }}>
                     {listings.map(listing => (
-                      <div key={listing.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 18 }}>{listing.address}</div>
-                          <div style={{ opacity: 0.7, fontSize: 14 }}>{listing.city}, {listing.state} {listing.zip}</div>
-                          <div style={{ marginTop: 8 }}>
-                            <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: listing.listing_type === 'FSBO' ? '#10b981' : listing.listing_type === 'Rental' ? '#f59e0b' : '#0ea5e9' }}>{listing.listing_type}</span>
-                            {listing.status === 'Active' && <span style={{ marginLeft: 8, display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 12, background: 'rgba(16,185,129,0.2)', color: '#10b981' }}>Active</span>}
+                      <div key={listing.id} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 18 }}>{listing.address}</div>
+                            <div style={{ opacity: 0.7, fontSize: 14 }}>{listing.city}, {listing.state} {listing.zip}</div>
+                            <div style={{ marginTop: 8 }}>
+                              <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: listing.listing_type === 'FSBO' ? '#10b981' : listing.listing_type === 'Rental' ? '#f59e0b' : '#0ea5e9' }}>{listing.listing_type}</span>
+                              <span style={{ marginLeft: 8, display: 'inline-block', padding: '4px 12px', borderRadius: 20, fontSize: 12, background: listing.status === 'Active' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: listing.status === 'Active' ? '#10b981' : '#ef4444' }}>{listing.status}</span>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>{formatPrice(listing.price, listing.listing_type)}</div>
+                            <div style={{ opacity: 0.7, fontSize: 14 }}>{listing.bedrooms} bed • {listing.bathrooms} bath • {listing.sqft?.toLocaleString()} sqft</div>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>{formatPrice(listing.price, listing.listing_type)}</div>
-                          <div style={{ opacity: 0.7, fontSize: 14 }}>{listing.bedrooms} bed • {listing.bathrooms} bath • {listing.sqft?.toLocaleString()} sqft</div>
+                        
+                        {/* Badge Controls */}
+                        <div style={{ marginBottom: 12, padding: 12, background: 'rgba(0,0,0,0.2)', borderRadius: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, opacity: 0.7 }}>Listing Badges</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px', background: listing.featured ? 'rgba(14,165,233,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: 20, fontSize: 13 }}>
+                              <input type="checkbox" checked={listing.featured || false} onChange={() => handleBadgeToggle(listing.id, 'featured', !listing.featured)} style={{ display: 'none' }} />
+                              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#0ea5e9', display: 'inline-block' }}></span>
+                              Featured
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px', background: listing.just_listed ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: 20, fontSize: 13 }}>
+                              <input type="checkbox" checked={listing.just_listed || false} onChange={() => handleBadgeToggle(listing.id, 'just_listed', !listing.just_listed)} style={{ display: 'none' }} />
+                              <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                              Just Listed
+                            </label>
+                            {(listing.listing_type === 'Rental' || listing.listing_type === 'Vacation') && (
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '6px 12px', background: listing.pet_friendly ? 'rgba(161,98,7,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: 20, fontSize: 13 }}>
+                                <input type="checkbox" checked={listing.pet_friendly || false} onChange={() => handleBadgeToggle(listing.id, 'pet_friendly', !listing.pet_friendly)} style={{ display: 'none' }} />
+                                <span>🐾</span>
+                                Pet Friendly
+                              </label>
+                            )}
+                            <select 
+                              value={listing.status || 'Active'} 
+                              onChange={(e) => handleBadgeToggle(listing.id, 'status', e.target.value)}
+                              style={{ padding: '6px 12px', borderRadius: 20, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', fontSize: 13 }}
+                            >
+                              <option value="Active">Active</option>
+                              <option value="pending">Pending</option>
+                              <option value="sold">Sold</option>
+                              <option value="Inactive">Inactive</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button onClick={() => handleEdit(listing)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #0ea5e9, #10b981)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>✏️ Edit</button>
+                          <button onClick={() => handleUnlist(listing.id)} style={{ padding: '8px 16px', background: 'rgba(245,158,11,0.2)', border: '1px solid #f59e0b', borderRadius: 8, color: '#f59e0b', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>📋 Unlist</button>
+                          <button onClick={() => handleDelete(listing.id)} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.2)', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>🗑️ Delete</button>
                         </div>
                       </div>
                     ))}
@@ -334,8 +484,8 @@ export default function SellerDashboard() {
             ) : (
               <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 24, border: '1px solid rgba(255,255,255,0.1)', maxHeight: '85vh', overflow: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                  <h2 style={{ margin: 0, fontSize: 20 }}>Create New Listing</h2>
-                  <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer' }}>×</button>
+                  <h2 style={{ margin: 0, fontSize: 20 }}>{editingId ? 'Edit Listing' : 'Create New Listing'}</h2>
+                  <button onClick={() => { setShowForm(false); setEditingId(null); }} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer' }}>×</button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 24 }}>
@@ -621,6 +771,40 @@ export default function SellerDashboard() {
                     <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe your property in detail..." rows={3} style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 16, resize: 'vertical' }} />
                   </div>
 
+                  {/* Badge Settings */}
+                  {editingId && (
+                    <>
+                      <h3 style={{ margin: '0 0 12px 0', fontSize: 14, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8 }}>🏷️ Listing Badges</h3>
+                      <div style={{ marginBottom: 20, padding: 16, background: 'rgba(0,0,0,0.2)', borderRadius: 12 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 16px', background: form.featured ? 'rgba(14,165,233,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: 20, border: form.featured ? '1px solid #0ea5e9' : '1px solid rgba(255,255,255,0.2)' }}>
+                            <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} style={{ width: 18, height: 18 }} />
+                            <span style={{ color: '#0ea5e9', fontWeight: 600 }}>Featured</span>
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 16px', background: form.just_listed ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: 20, border: form.just_listed ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.2)' }}>
+                            <input type="checkbox" name="just_listed" checked={form.just_listed} onChange={handleChange} style={{ width: 18, height: 18 }} />
+                            <span style={{ color: '#10b981', fontWeight: 600 }}>Just Listed</span>
+                          </label>
+                          {(form.listing_type === 'Rental' || form.listing_type === 'Vacation') && (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '8px 16px', background: form.pet_friendly ? 'rgba(161,98,7,0.3)' : 'rgba(255,255,255,0.1)', borderRadius: 20, border: form.pet_friendly ? '1px solid #a16207' : '1px solid rgba(255,255,255,0.2)' }}>
+                              <input type="checkbox" name="pet_friendly" checked={form.pet_friendly} onChange={handleChange} style={{ width: 18, height: 18 }} />
+                              <span style={{ fontWeight: 600 }}>🐾 Pet Friendly</span>
+                            </label>
+                          )}
+                        </div>
+                        <div style={{ marginTop: 12 }}>
+                          <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>Status</label>
+                          <select name="status" value={form.status} onChange={handleChange} style={{ width: 'auto', padding: '10px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 14 }}>
+                            <option value="Active">Active</option>
+                            <option value="pending">Pending</option>
+                            <option value="sold">Sold</option>
+                            <option value="Inactive">Inactive</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {/* Contact Info */}
                   <h3 style={{ margin: '0 0 12px 0', fontSize: 14, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 8 }}>👤 Your Contact Info</h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 20 }}>
@@ -642,9 +826,9 @@ export default function SellerDashboard() {
 
                   <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
                     <button type="submit" disabled={saving} style={{ flex: 1, padding: '14px 28px', background: 'linear-gradient(135deg, #0ea5e9, #10b981)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: saving ? 'wait' : 'pointer', fontSize: 16, opacity: saving ? 0.7 : 1 }}>
-                      {saving ? 'Creating...' : 'Create Listing'}
+                      {saving ? (editingId ? 'Updating...' : 'Creating...') : (editingId ? 'Update Listing' : 'Create Listing')}
                     </button>
-                    <button type="button" onClick={() => setShowForm(false)} style={{ padding: '14px 28px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 16 }}>Cancel</button>
+                    <button type="button" onClick={() => { setShowForm(false); setEditingId(null); }} style={{ padding: '14px 28px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 16 }}>Cancel</button>
                   </div>
                 </form>
                   </div>
