@@ -36,6 +36,8 @@ export default function BuyerDashboard() {
   const [selectedListing, setSelectedListing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [submittedOffer, setSubmittedOffer] = useState(null);
   
   const [form, setForm] = useState({
     listing_id: '',
@@ -114,7 +116,9 @@ export default function BuyerDashboard() {
       });
 
       if (res.ok) {
-        setMessage('✅ Offer submitted successfully! The seller will be notified.');
+        const offerData = await res.json();
+        setSubmittedOffer(offerData);
+        setShowSuccess(true);
         setShowOfferForm(false);
         setForm({
           listing_id: '',
@@ -363,6 +367,25 @@ export default function BuyerDashboard() {
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccess && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ background: 'linear-gradient(135deg, #0a2540, #1a3a5c)', borderRadius: 20, padding: 40, maxWidth: 500, width: '90%', textAlign: 'center', border: '2px solid #10b981' }}>
+            <div style={{ fontSize: 64, marginBottom: 20 }}>✅</div>
+            <h2 style={{ margin: '0 0 16px', color: '#10b981' }}>Offer Submitted!</h2>
+            <p style={{ margin: '0 0 24px', fontSize: 16, lineHeight: 1.6 }}>
+              Your offer of <strong style={{ color: '#10b981' }}>${submittedOffer?.offer_amount ? parseFloat(submittedOffer.offer_amount).toLocaleString() : '0'}</strong> has been submitted to the seller.
+            </p>
+            <p style={{ margin: '0 0 24px', fontSize: 14, opacity: 0.7 }}>
+              You'll be notified when the seller responds. Check the "My Offers" tab to track your offer status.
+            </p>
+            <button onClick={() => { setShowSuccess(false); setSubmittedOffer(null); }} style={{ padding: '14px 32px', background: 'linear-gradient(135deg, #0ea5e9, #10b981)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 16, cursor: 'pointer' }}>
+              Got It!
+            </button>
           </div>
         </div>
       )}

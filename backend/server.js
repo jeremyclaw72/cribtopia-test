@@ -273,10 +273,19 @@ app.post('/api/listings', async (req, res) => {
       photos, video_path,
       seller_name, seller_email, seller_phone 
     } = req.body;
+    
+    // Convert features array to PostgreSQL format
+    const featuresPg = features && features.length > 0 
+      ? `{${features.map(v => `"${v.replace(/"/g, '""')}"`).join(',')}}` 
+      : null;
+    const photosPg = photos && photos.length > 0 
+      ? JSON.stringify(photos) 
+      : null;
+    
     const result = await pool.query(
       `INSERT INTO listings (address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type, year_built, lot_size, parking, heating, cooling, flooring, features, neighborhood, photos, video_path, seller_name, seller_email, seller_phone)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) RETURNING *`,
-      [address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type || 'FSBO', year_built || null, lot_size || null, parking || null, heating || null, cooling || null, flooring || null, features ? JSON.stringify(features) : null, neighborhood || null, photos ? JSON.stringify(photos) : null, video_path || null, seller_name, seller_email, seller_phone]
+      [address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type || 'FSBO', year_built || null, lot_size || null, parking || null, heating || null, cooling || null, flooring || null, featuresPg, neighborhood || null, photosPg, video_path || null, seller_name, seller_email, seller_phone]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -293,10 +302,19 @@ app.post('/api/listings/auth', auth, async (req, res) => {
       year_built, lot_size, parking, heating, cooling, flooring, features, neighborhood,
       photos, video_path
     } = req.body;
+    
+    // Convert features array to PostgreSQL format
+    const featuresPg = features && features.length > 0 
+      ? `{${features.map(v => `"${v.replace(/"/g, '""')}"`).join(',')}}` 
+      : null;
+    const photosPg = photos && photos.length > 0 
+      ? JSON.stringify(photos) 
+      : null;
+    
     const result = await pool.query(
       `INSERT INTO listings (address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type, year_built, lot_size, parking, heating, cooling, flooring, features, neighborhood, photos, video_path, seller_id, seller_name, seller_email, seller_phone)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) RETURNING *`,
-      [address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type || 'FSBO', year_built || null, lot_size || null, parking || null, heating || null, cooling || null, flooring || null, features ? JSON.stringify(features) : null, neighborhood || null, photos ? JSON.stringify(photos) : null, video_path || null, req.user.id, req.user.full_name, req.user.email, req.user.phone]
+      [address, city, state, zip, price, bedrooms, bathrooms, sqft, description, listing_type || 'FSBO', year_built || null, lot_size || null, parking || null, heating || null, cooling || null, flooring || null, featuresPg, neighborhood || null, photosPg, video_path || null, req.user.id, req.user.full_name, req.user.email, req.user.phone]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
