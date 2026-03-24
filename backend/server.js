@@ -161,7 +161,9 @@ app.post('/api/listings', async (req, res) => {
 app.put('/api/listings/:id', async (req, res) => {
   try {
     // JSONB columns that need to be stringified
-    const jsonbFields = ['photos', 'features', 'amenities'];
+    const jsonbFields = ['photos', 'amenities'];
+    // Text array columns that need PostgreSQL array format
+    const textArrayFields = ['features', 'appliances'];
     
     const fields = Object.keys(req.body);
     const values = Object.values(req.body).map((val, i) => {
@@ -169,6 +171,10 @@ app.put('/api/listings/:id', async (req, res) => {
       // Stringify arrays for JSONB columns
       if (jsonbFields.includes(field) && Array.isArray(val)) {
         return JSON.stringify(val);
+      }
+      // Convert arrays to PostgreSQL array format for text[] columns
+      if (textArrayFields.includes(field) && Array.isArray(val)) {
+        return `{${val.map(v => `"${v.replace(/"/g, '""')}"`).join(',')}}`;
       }
       return val;
     });
