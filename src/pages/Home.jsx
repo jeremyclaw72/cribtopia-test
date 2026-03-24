@@ -196,26 +196,51 @@ export default function Home() {
                   />
                   {/* Status badges (top left) - SOLD or PENDING */}
                   {listing.status?.toLowerCase() === 'sold' && (
-                    <img 
-                      src="/images/badge-status.jpg" 
-                      style={{ position: 'absolute', top: 8, left: 8, height: 28, borderRadius: 4 }}
-                      alt="Sold"
-                    />
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 10, 
+                      left: 10, 
+                      background: BADGE_COLORS.sold,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      Sold
+                    </div>
                   )}
                   {listing.status?.toLowerCase() === 'pending' && (
-                    <img 
-                      src="/images/badge-status.jpg" 
-                      style={{ position: 'absolute', top: 8, left: 8, height: 28, borderRadius: 4 }}
-                      alt="Pending"
-                    />
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 10, 
+                      left: 10, 
+                      background: BADGE_COLORS.pending,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      Pending
+                    </div>
                   )}
                   {/* Featured badge (top center) */}
                   {listing.featured && (
-                    <img 
-                      src="/images/badge-featured.jpg" 
-                      style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', height: 28, borderRadius: 4 }}
-                      alt="Featured"
-                    />
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 10, 
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: BADGE_COLORS.featured,
+                      padding: '4px 12px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}>
+                      Featured
+                    </div>
                   )}
                   {/* Listing type (top right) */}
                   <div style={{ 
@@ -232,19 +257,33 @@ export default function Home() {
                   </div>
                   {/* Just Listed badge (below type) */}
                   {listing.just_listed && (
-                    <img 
-                      src="/images/badge-just-listed.jpg" 
-                      style={{ position: 'absolute', top: 36, right: 8, height: 24, borderRadius: 4 }}
-                      alt="Just Listed"
-                    />
+                    <div style={{ 
+                      position: 'absolute', 
+                      top: 38, 
+                      right: 10, 
+                      background: BADGE_COLORS.just_listed,
+                      padding: '3px 10px',
+                      borderRadius: 20,
+                      fontSize: 10,
+                      fontWeight: 700
+                    }}>
+                      Just Listed
+                    </div>
                   )}
                   {/* Pet Friendly badge (bottom left) - for rentals/vacation */}
                   {listing.pet_friendly && (listing.listing_type === 'Rental' || listing.listing_type === 'Vacation') && (
-                    <img 
-                      src="/images/badge-status.jpg" 
-                      style={{ position: 'absolute', bottom: 8, left: 8, height: 28, borderRadius: 4 }}
-                      alt="Pet Friendly"
-                    />
+                    <div style={{ 
+                      position: 'absolute', 
+                      bottom: 10, 
+                      left: 10, 
+                      background: BADGE_COLORS.pet_friendly,
+                      padding: '4px 10px',
+                      borderRadius: 20,
+                      fontSize: 10,
+                      fontWeight: 600
+                    }}>
+                      🐾 Pet Friendly
+                    </div>
                   )}
                 </div>
                 <div style={{ padding: 16 }}>
@@ -386,34 +425,66 @@ export default function Home() {
 
                 {/* Status Badges - SOLD or PENDING */}
                 {selectedListing.status?.toLowerCase() === 'sold' && (
-                  <img 
-                    src="/images/badge-status.jpg" 
-                    style={{ position: 'absolute', top: 10, left: 10, height: 32, borderRadius: 4 }}
-                    alt="Sold"
-                  />
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    left: 12, 
+                    background: BADGE_COLORS.sold,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}>
+                    Sold
+                  </div>
                 )}
                 {selectedListing.status?.toLowerCase() === 'pending' && (
-                  <img 
-                    src="/images/badge-status.jpg" 
-                    style={{ position: 'absolute', top: 10, left: 10, height: 32, borderRadius: 4 }}
-                    alt="Pending"
-                  />
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    left: 12, 
+                    background: BADGE_COLORS.pending,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}>
+                    Pending
+                  </div>
                 )}
                 {/* Featured Badge */}
                 {selectedListing.featured && (
-                  <img 
-                    src="/images/badge-featured.jpg" 
-                    style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', height: 32, borderRadius: 4 }}
-                    alt="Featured"
-                  />
+                  <div style={{ 
+                    position: 'absolute', 
+                    top: 12, 
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: BADGE_COLORS.featured,
+                    padding: '6px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}>
+                    Featured
+                  </div>
                 )}
                 {/* Just Listed Badge */}
                 {selectedListing.just_listed && (
-                  <img 
-                    src="/images/badge-just-listed.jpg" 
-                    style={{ position: 'absolute', top: 48, left: 10, height: 28, borderRadius: 4 }}
-                    alt="Just Listed"
-                  />
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 44, 
+                    left: 12, 
+                    background: BADGE_COLORS.just_listed,
+                    padding: '5px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 700
+                  }}>
+                    Just Listed
+                  </div>
                 )}
                 {/* Listing Type Badge */}
                 <div style={{ 
@@ -430,11 +501,18 @@ export default function Home() {
                 </div>
                 {/* Pet Friendly Badge */}
                 {selectedListing.pet_friendly && (selectedListing.listing_type === 'Rental' || selectedListing.listing_type === 'Vacation') && (
-                  <img 
-                    src="/images/badge-status.jpg" 
-                    style={{ position: 'absolute', bottom: 10, right: 10, height: 32, borderRadius: 4 }}
-                    alt="Pet Friendly"
-                  />
+                  <div style={{ 
+                    position: 'absolute', 
+                    bottom: 12, 
+                    right: 12, 
+                    background: BADGE_COLORS.pet_friendly,
+                    padding: '6px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 600
+                  }}>
+                    🐾 Pet Friendly
+                  </div>
                 )}
               </div>
 
