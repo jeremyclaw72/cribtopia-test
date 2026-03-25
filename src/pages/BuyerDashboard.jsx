@@ -370,8 +370,8 @@ export default function BuyerDashboard() {
                 </div>
 
                 <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-                  <button type="submit" disabled={saving} style={{ flex: 1, padding: '14px 28px', background: 'linear-gradient(135deg, #0ea5e9, #10b981)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, cursor: saving ? 'wait' : 'pointer', fontSize: 16, opacity: saving ? 0.7 : 1 }}>
-                    {saving ? 'Submitting...' : 'Submit Offer'}
+                  <button type="submit" disabled={saving} style={{ flex: 1, padding: '14px 28px', background: submitStatus === 'submitting' ? 'linear-gradient(135deg, #0ea5e9, #10b981)' : submitStatus === 'submitted' ? 'linear-gradient(135deg, #10b981, #0ea5e9)' : 'linear-gradient(135deg, #0ea5e9, #10b981)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, cursor: saving ? 'wait' : 'pointer', fontSize: 16, opacity: saving ? 0.7 : 1 }}>
+                    {submitStatus === 'submitting' ? 'Submitting...' : submitStatus === 'submitted' ? 'Submitted!' : 'Submit Offer'}
                   </button>
                   <button type="button" onClick={() => setShowOfferForm(false)} style={{ padding: '14px 28px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 10, color: 'white', fontWeight: 600, cursor: 'pointer', fontSize: 16 }}>Cancel</button>
                 </div>
