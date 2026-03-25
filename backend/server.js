@@ -3,9 +3,11 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +58,17 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
+
+// Email transporter configuration
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER || 'jeremywpage@gmail.com',
+    pass: process.env.EMAIL_PASS || ''
+  }
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -183,6 +196,130 @@ app.put('/api/auth/profile', auth, async (req, res) => {
   } catch (err) {
     console.error('Error updating profile:', err);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// Password reset routes
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    // Check if user exists
+    const userResult = await pool.query(
+      'SELECT id, email, full_name FROM users WHERE email = $1',
+      [email.toLowerCase().trim()]
+    );
+    
+    if (userResult.rows.length === 0) {
+      // Don't reveal that email doesn't exist for security
+      return res.json({ 
+        message: 'If the email exists in our system, you will receive a password reset link.' 
+      });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    
+    // Set expiry to 1 hour from now
+    const resetTokenExpiresAt = new Date(Date.now() + 3600000); // 1 hour
+    
+    // Store hash of token in database
+    await pool.query(
+      `UPDATE users SET 
+       reset_token_hash = $1, 
+       reset_token_expires_at = $2 
+       WHERE id = $3`,
+      [hashedToken, resetTokenExpiresAt, user.id]
+    );
+    
+    // Send email with reset link
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://brutus.tail7c3f02.ts.net:5173'}/auth/reset-password?token=${resetToken}`;
+    
+    await transporter.sendMail({
+      from: '"Cribtopia Support" <jeremywpage@gmail.com>',
+      to: user.email,
+      subject: 'Reset your Cribtopia password',
+      html: `
+        <h2>Password Reset Request</h2>
+        <p>Hello ${user.full_name || user.email},</p>
+        <p>We received a request to reset your password for your Cribtopia account.</p>
+        <p>Click the link below to reset your password (this link will expire in 1 hour):</p>
+        <a href="${resetUrl}" style="background-color: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Reset Password
+        </a>
+        <p>If you didn't request this, please ignore this email.</p>
+        <p>This link will expire in 1 hour.</p>
+        <hr>
+        <p><small>Cribtopia Real Estate Platform</small></p>
+      `
+    });
+    
+    res.json({ 
+      message: 'If the email exists in our system, you will receive a password reset link.' 
+    });
+  } catch (err) {
+    console.error('Error in forgot password:', err);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and password are required' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+    
+    // Hash the token to compare with stored hash
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    
+    // Find user with valid token
+    const userResult = await pool.query(
+      `SELECT id, email, full_name FROM users 
+       WHERE reset_token_hash = $1 
+       AND reset_token_expires_at > NOW()`,
+      [hashedToken]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    
+    // Update password and clear reset token fields
+    await pool.query(
+      `UPDATE users SET 
+       password_hash = $1, 
+       reset_token_hash = NULL, 
+       reset_token_expires_at = NULL,
+       updated_at = NOW() 
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
+    
+    res.json({ 
+      message: 'Password has been reset successfully. You can now log in with your new password.' 
+    });
+  } catch (err) {
+    console.error('Error resetting password:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 });
 
