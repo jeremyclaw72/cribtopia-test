@@ -240,7 +240,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     );
     
     // Send email with reset link
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://brutus.tail7c3f02.ts.net:5173'}/auth/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://brutus.tail7c3f02.ts.net:5173'}/#/reset-password?token=${resetToken}`;
     
     await transporter.sendMail({
       from: '"Cribtopia Support" <jeremywpage@gmail.com>',

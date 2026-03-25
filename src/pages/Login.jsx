@@ -205,7 +205,7 @@ export default function Login({ onLogin }) {
             />
           </div>
 
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 12 }}>
             <label style={{ display: 'block', marginBottom: 6, color: '#fff', fontWeight: 600 }}>
               Password
             </label>
@@ -228,6 +228,25 @@ export default function Login({ onLogin }) {
               }}
             />
           </div>
+
+          {mode === 'login' && (
+            <div style={{ marginBottom: 16, textAlign: 'right' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#0ea5e9',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 500
+                }}
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
 
           <button
             type="submit"

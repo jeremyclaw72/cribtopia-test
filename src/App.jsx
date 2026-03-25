@@ -311,6 +311,8 @@ class ErrorBoundary extends React.Component {
 // Lazy load pages
 const Home = React.lazy(() => import('./pages/Home'))
 const Login = React.lazy(() => import('./pages/Login'))
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'))
 const SellerDashboard = React.lazy(() => import('./pages/SellerDashboard'))
 const BuyerDashboard = React.lazy(() => import('./pages/BuyerDashboard'))
 const ContractDrafter = React.lazy(() => import('./pages/ContractDrafter'))
@@ -337,6 +339,8 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/SellerDashboard" element={<SellerDashboard />} />
                 <Route path="/BuyerDashboard" element={<BuyerDashboard />} />
                 <Route path="/ContractDrafter" element={<ContractDrafter />} />
