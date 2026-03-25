@@ -38,6 +38,7 @@ export default function BuyerDashboard() {
   const [message, setMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedOffer, setSubmittedOffer] = useState(null);
+  const [submitStatus, setSubmitStatus] = useState('idle'); // idle | submitting | submitted
   
   const [form, setForm] = useState({
     listing_id: '',
@@ -102,6 +103,7 @@ export default function BuyerDashboard() {
   const handleSubmitOffer = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setSubmitStatus('submitting');
     setMessage('');
 
     try {
@@ -118,30 +120,38 @@ export default function BuyerDashboard() {
       if (res.ok) {
         const offerData = await res.json();
         setSubmittedOffer(offerData);
-        setShowSuccess(true);
-        setShowOfferForm(false);
-        setForm({
-          listing_id: '',
-          buyer_name: '',
-          buyer_email: '',
-          buyer_phone: '',
-          offer_amount: '',
-          earnest_money: '',
-          financing_type: 'Cash',
-          closing_date: '',
-          contingencies: '',
-          message: ''
-        });
-        fetchData();
+        setSubmitStatus('submitted');
+        
+        // Show submitted status briefly, then close form and show modal
+        setTimeout(() => {
+          setShowOfferForm(false);
+          setShowSuccess(true);
+          setSubmitStatus('idle');
+          setForm({
+            listing_id: '',
+            buyer_name: '',
+            buyer_email: '',
+            buyer_phone: '',
+            offer_amount: '',
+            earnest_money: '',
+            financing_type: 'Cash',
+            closing_date: '',
+            contingencies: '',
+            message: ''
+          });
+          fetchData();
+        }, 1500);
       } else {
+        setSubmitStatus('idle');
+        setSaving(false);
         setMessage('❌ Failed to submit offer. Please try again.');
       }
     } catch (err) {
       console.error('Error submitting offer:', err);
+      setSubmitStatus('idle');
+      setSaving(false);
       setMessage('❌ Error connecting to server.');
     }
-
-    setSaving(false);
   };
 
   const formatPrice = (price, type) => {
